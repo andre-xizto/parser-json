@@ -56,7 +56,7 @@ public class Lexer {
                 default:
                     if (Character.isDigit(c)) {
                         StringBuilder numbers = new StringBuilder();
-                        while (i < chars.length && Character.isDigit(chars[i])) {
+                        while (i < chars.length && (Character.isDigit(chars[i]) || chars[i] == '.') ) {
                             numbers.append(chars[i]);
                             i++;
                         }
