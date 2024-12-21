@@ -8,6 +8,8 @@ import java.util.*;
 
 public class JsonParser {
 
+    private static int structure = 0;
+
     public static <T> T parseSingle(String json, Class<T> targetClass) {
         List<Token> tokenize = Lexer.tokenize(json);
         Object parse = JsonParser.parse(tokenize);
@@ -29,7 +31,7 @@ public class JsonParser {
             throw new InvalidSyntaxException("empty JSON");
         }
 
-        Token first = iterator.next();
+        Token first = consume(iterator);
 
         if (first.getType().equals(TypeToken.INICIO_OBJETO)) {
             return parseObject(iterator);
@@ -43,11 +45,17 @@ public class JsonParser {
 
     }
 
+    private static Token consume(Iterator<Token> iterator) {
+        Token token = iterator.next();
+        structure++;
+        return token;
+    }
+
     private static List<Object> parseArray(Iterator<Token> iterator) {
         List<Object> list = new ArrayList<>();
 
         while (iterator.hasNext()) {
-            Token token = iterator.next();
+            Token token = consume(iterator);
             if (token.getType().equals(TypeToken.FIM_ARRAY)) {
                 return list;
             }
@@ -55,14 +63,14 @@ public class JsonParser {
             Object value = parseValue(token, iterator);
             list.add(value);
 
-            Token nextToken = iterator.next();
+            Token nextToken = consume(iterator);
 
             if (nextToken.getType().equals(TypeToken.FIM_ARRAY)) {
                 return list;
             }
 
             if (!nextToken.getType().equals(TypeToken.VIRGULA)) {
-                throw new InvalidSyntaxException("expected ',' or ']'");
+                throw new InvalidSyntaxException("expected ',' or ']' at structure " + structure);
             }
 
         }
@@ -78,7 +86,7 @@ public class JsonParser {
         }
 
         while(iterator.hasNext()) {
-            Token token = iterator.next();
+            Token token = consume(iterator);
 
             if (token.getType().equals(TypeToken.FIM_OBJETO)) {
                 return map;
@@ -90,17 +98,17 @@ public class JsonParser {
 
             String key = token.getValue();
 
-            if (!iterator.hasNext() || !iterator.next().getType().equals(TypeToken.DOIS_PONTO)) {
+            if (!iterator.hasNext() || !consume(iterator).getType().equals(TypeToken.DOIS_PONTO)) {
                 throw new InvalidSyntaxException("expected: ';' after json key");
             }
 
-            Token valueToken = iterator.next();
+            Token valueToken = consume(iterator);
             Object value = parseValue(valueToken, iterator);
 
             map.put(key,value);
 
             if (iterator.hasNext()) {
-                Token nextToken = iterator.next();
+                Token nextToken = consume(iterator);
                 if (nextToken.getType().equals(TypeToken.FIM_OBJETO)) {
                     return map;
                 }
