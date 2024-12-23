@@ -130,7 +130,12 @@ public class JsonParser {
         return switch (type) {
             case BOOLEANO -> Boolean.valueOf(value);
             case TEXTO -> value;
-            case NUMERO -> Double.valueOf(value);
+            case NUMERO -> {
+                if (value.contains(".")) {
+                    yield Double.valueOf(value);
+                }
+             yield Long.valueOf(value);
+            }
             case INICIO_OBJETO -> parseObject(iterator);
             case INICIO_ARRAY -> parseArray(iterator);
             case NULO -> null;
