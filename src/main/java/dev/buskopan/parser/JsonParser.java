@@ -1,5 +1,6 @@
 package dev.buskopan.parser;
 
+import dev.buskopan.exception.InvalidSyntaxException;
 import dev.buskopan.lexer.Lexer;
 import dev.buskopan.lexer.Token;
 import dev.buskopan.lexer.TypeToken;

@@ -1,5 +1,7 @@
 package dev.buskopan.lexer;
 
+import dev.buskopan.exception.InvalidCharacterException;
+
 import java.util.ArrayList;
 import java.util.List;
 

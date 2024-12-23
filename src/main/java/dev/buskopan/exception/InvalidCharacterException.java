@@ -1,4 +1,4 @@
-package dev.buskopan.lexer;
+package dev.buskopan.exception;
 
 public class InvalidCharacterException extends RuntimeException{
     private String msg;

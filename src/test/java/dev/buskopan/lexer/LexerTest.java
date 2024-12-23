@@ -1,5 +1,6 @@
 package dev.buskopan.lexer;
 
+import dev.buskopan.exception.InvalidCharacterException;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
