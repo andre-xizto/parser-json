@@ -2,9 +2,13 @@ package dev.buskopan.parser;
 
 import dev.buskopan.annotation.JsonFieldAnnotation;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class ToObject {
@@ -18,16 +22,17 @@ public class ToObject {
     }
 
     public static <T> List<T> convertList(List<?> objects, Class<T> target) {
+
         return objects.stream()
-                .filter(obj -> obj instanceof Map<?, ?>) // Garante que apenas mapas são processados
+                .filter(obj -> obj instanceof Map<?, ?> || obj instanceof List<?>)
                 .map(el -> convertMap((Map<?, ?>) el, target))
                 .collect(Collectors.toList());
     }
 
-    private static <T> T convertMap(Map<?, ?> map, Class<T> target) {
+    private static <T> T  convertMap(Map<?, ?> map, Class<T> target) {
         try {
             if (map == null || map.isEmpty()) {
-                throw new IllegalArgumentException("Input map cannot be null or empty");
+                throw new ConvertToObjectException("Input map cannot be null or empty");
             }
 
             T instance = target.getConstructor().newInstance();
@@ -39,6 +44,7 @@ public class ToObject {
                 String jsonKey = annotation != null ? annotation.value() : field.getName();
 
                 Object value = map.get(jsonKey);
+                Class<?> fieldType = field.getType();
 
                 // Se for um campo composto
                 if (annotation != null && annotation.composite().length > 0) {
@@ -57,24 +63,95 @@ public class ToObject {
                         throw new ConvertToObjectException("cannot use JsonField annotation on fields that are arrays!");
                     }
                 }
-                // Se for um objeto aninhado
                 else if (value instanceof Map<?, ?> nestedMap) {
                     Object nestedObject = convert(nestedMap, field.getType());
                     field.set(instance, nestedObject);
                 }
-                // Se for um valor nulo ou "null"
-                else if (value == null || "null".equals(value)) {
-                    field.set(instance, null);
+                else if (value instanceof List<?> nestedList) {
+
+                    if (List.class.isAssignableFrom(fieldType)) {
+                        var clazz = getListComponentType(field);
+                        // Converte para lista
+                        List<Object> list = nestedList.stream()
+                                .map(el -> {
+                                    if (el instanceof Map<?, ?> nestedMap) {
+                                        // Se for um objeto, converta recursivamente
+                                        return convert(nestedMap, clazz);
+                                    } else {
+                                        // Se for um valor primitivo, parseie diretamente
+                                        return parseValue(el, clazz);
+                                    }
+                                })
+                                .collect(Collectors.toList());
+                        field.set(instance, list);
+                    }
                 }
-                // Se for um valor normal
                 else {
-                    field.set(instance, value);
+                    field.set(instance, parseValue(value,fieldType));
                 }
             }
 
             return instance;
         } catch (Exception ex) {
-            throw new RuntimeException("Error during object conversion: " + ex.getMessage(), ex);
+            throw new ConvertToObjectException("Error during object conversion: " + ex.getMessage());
         }
+    }
+
+    private static Class<?> getListComponentType(Field field) {
+        if (List.class.isAssignableFrom(field.getType())) {
+            Type genericType = field.getGenericType();
+            if (genericType instanceof ParameterizedType parameterizedType) {
+                Type[] typeArguments = parameterizedType.getActualTypeArguments();
+                if (typeArguments.length == 1) {
+                    Type componentType = typeArguments[0];
+                    if (componentType instanceof Class<?> clazz) {
+                        return clazz;
+                    }
+                }
+            }
+        }
+        return Object.class;
+    }
+
+    private static Object parseValue(Object value, Class<?> type) {
+        if (value == null || type == null) {
+            return null;
+        }
+
+        if (type.isAssignableFrom(value.getClass())) {
+            return value;
+        }
+
+        if (type == String.class) {
+            return String.valueOf(value);
+        }
+
+        if (type == Integer.class || type == int.class) {
+            return Integer.valueOf(value.toString());
+        }
+
+        if (type == Float.class || type == float.class) {
+            return Float.valueOf(value.toString());
+        }
+
+        if (type == Double.class || type == double.class) {
+            if (value instanceof Number number) {
+                return Double.valueOf(String.valueOf(number));
+            }
+            return Double.valueOf(String.valueOf(value));
+        }
+
+        if (type == Long.class || type == long.class) {
+            if (value instanceof Number number) {
+                return Long.valueOf(String.valueOf(number));
+            }
+            return Long.valueOf(String.valueOf(value));
+        }
+
+        if (type == Boolean.class || type == boolean.class) {
+            return Boolean.valueOf(value.toString());
+        }
+
+        throw new ConvertToObjectException("cannot parse value " + value + " of type " + type);
     }
 }
