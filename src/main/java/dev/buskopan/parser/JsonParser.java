@@ -1,31 +1,47 @@
 package dev.buskopan.parser;
 
 import dev.buskopan.exception.InvalidSyntaxException;
-import dev.buskopan.lexer.Lexer;
-import dev.buskopan.lexer.Token;
-import dev.buskopan.lexer.TypeToken;
+import dev.buskopan.internal.lexer.Lexer;
+import dev.buskopan.internal.lexer.Token;
+import dev.buskopan.internal.lexer.TypeToken;
+import dev.buskopan.internal.parser.ToObject;
 
 import java.util.*;
 
 public class JsonParser {
 
-    private static int structure = 0;
+    private final Lexer lexer;
+    private final ToObject toObject;
+    private int structure = 0;
+    private static JsonParser instance;
 
-    public static <T> T parseSingle(String json, Class<T> targetClass) {
-        List<Token> tokenize = Lexer.tokenize(json);
-        Object parse = JsonParser.parse(tokenize);
-        T converted = ToObject.convert(parse, targetClass);
+    private JsonParser(Lexer lexer, ToObject toObject) {
+        this.lexer = lexer;
+        this.toObject = toObject;
+    }
+
+    public static JsonParser getInstance() {
+        if (instance == null) {
+            instance = new JsonParser(Lexer.getInstance(), ToObject.getInstance());
+        }
+        return instance;
+    }
+
+    public <T> T parseSingle(String json, Class<T> targetClass) {
+        List<Token> tokenize = lexer.tokenize(json);
+        Object parse = parse(tokenize);
+        T converted = toObject.convert(parse, targetClass);
         return converted;
     }
 
-    public static <T> List<T> parseList(String json, Class<T> targetClass) {
-        List<Token> tokenize = Lexer.tokenize(json);
-        List<?> parse = (List<?>) JsonParser.parse(tokenize);
-        List<T> converted = ToObject.convertList(parse, targetClass);
+    public <T> List<T> parseList(String json, Class<T> targetClass) {
+        List<Token> tokenize = lexer.tokenize(json);
+        List<?> parse = (List<?>) parse(tokenize);
+        List<T> converted = toObject.convertList(parse, targetClass);
         return converted;
     }
 
-    private static Object parse(List<Token> tokens) {
+    private Object parse(List<Token> tokens) {
         Iterator<Token> iterator = tokens.iterator();
 
         if (!iterator.hasNext()) {
@@ -46,13 +62,13 @@ public class JsonParser {
 
     }
 
-    private static Token consume(Iterator<Token> iterator) {
+    private Token consume(Iterator<Token> iterator) {
         Token token = iterator.next();
         structure++;
         return token;
     }
 
-    private static List<Object> parseArray(Iterator<Token> iterator) {
+    private List<Object> parseArray(Iterator<Token> iterator) {
         List<Object> list = new ArrayList<>();
 
         while (iterator.hasNext()) {
@@ -79,7 +95,7 @@ public class JsonParser {
         throw new InvalidSyntaxException("expected ] or value");
     }
 
-    private static Map<String, Object> parseObject(Iterator<Token> iterator) {
+    private Map<String, Object> parseObject(Iterator<Token> iterator) {
         Map<String, Object> map = new HashMap<>();
 
         if (!iterator.hasNext()) {
@@ -125,7 +141,7 @@ public class JsonParser {
         return null;
     }
 
-    private static Object parseValue(Token valueToken, Iterator<Token> iterator) {
+    private Object parseValue(Token valueToken, Iterator<Token> iterator) {
         String value = valueToken.getValue();
         TypeToken type = valueToken.getType();
         return switch (type) {

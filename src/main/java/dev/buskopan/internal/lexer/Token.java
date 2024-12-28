@@ -1,4 +1,4 @@
-package dev.buskopan.lexer;
+package dev.buskopan.internal.lexer;
 
 public class Token {
     private final TypeToken type;

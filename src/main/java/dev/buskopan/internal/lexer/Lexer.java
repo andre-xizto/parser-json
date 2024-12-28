@@ -1,4 +1,4 @@
-package dev.buskopan.lexer;
+package dev.buskopan.internal.lexer;
 
 import dev.buskopan.exception.InvalidCharacterException;
 
@@ -7,7 +7,19 @@ import java.util.List;
 
 public class Lexer {
 
-    public static List<Token> tokenize(String input) {
+    private static Lexer instance;
+
+    private Lexer() {
+    }
+
+     public static Lexer getInstance() {
+        if (instance == null) {
+            instance = new Lexer();
+        }
+        return instance;
+    }
+
+    public List<Token> tokenize(String input) {
         List<Token> tokens = new ArrayList<>();
         char[] chars = input.toCharArray();
         int i = 0;

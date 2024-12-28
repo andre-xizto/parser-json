@@ -1,4 +1,4 @@
-package dev.buskopan.parser;
+package dev.buskopan.internal.parser;
 
 import dev.buskopan.annotation.JsonFieldAnnotation;
 import dev.buskopan.exception.ConvertToObjectException;
@@ -12,7 +12,19 @@ import java.util.stream.Collectors;
 
 public class ToObject {
 
-    public static <T> T convert(Object object, Class<T> target) {
+    private static ToObject instance;
+
+    private ToObject() {
+    }
+
+    public static ToObject getInstance() {
+        if (instance == null) {
+            instance = new ToObject();
+        }
+        return instance;
+    }
+
+    public <T> T convert(Object object, Class<T> target) {
         if (object instanceof Map<?, ?> map) {
             return convertMap(map, target);
         }
@@ -20,7 +32,7 @@ public class ToObject {
         throw new ConvertToObjectException("Couldn't convert an instance of " + object.getClass().getName());
     }
 
-    public static <T> List<T> convertList(List<?> objects, Class<T> target) {
+    public <T> List<T> convertList(List<?> objects, Class<T> target) {
 
         return objects.stream()
                 .filter(obj -> obj instanceof Map<?, ?> || obj instanceof List<?>)
@@ -28,7 +40,7 @@ public class ToObject {
                 .collect(Collectors.toList());
     }
 
-    private static <T> T  convertMap(Map<?, ?> map, Class<T> target) {
+    private <T> T  convertMap(Map<?, ?> map, Class<T> target) {
         try {
             if (map == null || map.isEmpty()) {
                 throw new ConvertToObjectException("Input map cannot be null or empty");
@@ -96,7 +108,7 @@ public class ToObject {
         }
     }
 
-    private static Class<?> getListComponentType(Field field) {
+    private Class<?> getListComponentType(Field field) {
         if (List.class.isAssignableFrom(field.getType())) {
             Type genericType = field.getGenericType();
             if (genericType instanceof ParameterizedType parameterizedType) {
@@ -112,7 +124,7 @@ public class ToObject {
         return Object.class;
     }
 
-    private static Object parseValue(Object value, Class<?> type) {
+    private Object parseValue(Object value, Class<?> type) {
         if (value == null || type == null) {
             return null;
         }
@@ -134,16 +146,10 @@ public class ToObject {
         }
 
         if (type == Double.class || type == double.class) {
-            if (value instanceof Number number) {
-                return Double.valueOf(String.valueOf(number));
-            }
             return Double.valueOf(String.valueOf(value));
         }
 
         if (type == Long.class || type == long.class) {
-            if (value instanceof Number number) {
-                return Long.valueOf(String.valueOf(number));
-            }
             return Long.valueOf(String.valueOf(value));
         }
 

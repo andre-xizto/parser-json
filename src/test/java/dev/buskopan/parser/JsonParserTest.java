@@ -3,6 +3,9 @@
     import dev.buskopan.annotation.JsonFieldAnnotation;
     import dev.buskopan.exception.ConvertToObjectException;
     import dev.buskopan.exception.InvalidSyntaxException;
+    import dev.buskopan.internal.lexer.Lexer;
+    import dev.buskopan.internal.parser.ToObject;
+    import org.junit.jupiter.api.BeforeAll;
     import org.junit.jupiter.api.Test;
 
     import java.util.List;
@@ -11,7 +14,27 @@
 
     class JsonParserTest {
 
-        static class Address {
+        private static JsonParser jsonParser;
+        private static Lexer lexer;
+        private static ToObject toObject;
+
+        @BeforeAll
+        public static void setup() {
+
+            if (lexer == null ) {
+                lexer = Lexer.getInstance();
+            }
+
+            if (toObject == null) {
+                toObject = ToObject.getInstance();
+            }
+
+            if (jsonParser == null) {
+                jsonParser = JsonParser.getInstance();
+            }
+        }
+
+        public static class Address {
             private String estado;
             private String cidade;
 
@@ -35,7 +58,7 @@
             }
         }
 
-        static class Order {
+        public static class Order {
             private long id;
             private List<Product> products;
             private List<Integer> numbers;
@@ -76,7 +99,7 @@
             }
         }
 
-        static class User {
+        public static class User {
             private String name;
             private String email;
             private Address address;
@@ -118,7 +141,7 @@
             }
         }
 
-        static class Product {
+        public static class Product {
             private Long id;
             private String name;
 
@@ -175,7 +198,7 @@
                     }
                     """;
 
-            User user = JsonParser.parseSingle(json, User.class);
+            User user = jsonParser.parseSingle(json, User.class);
             assertNotNull(user.getEmail());
             assertNotNull(user.getName());
             assertEquals(20, user.getAge());
@@ -195,7 +218,7 @@
                     }
                     """;
 
-            User user = JsonParser.parseSingle(json, User.class);
+            User user = jsonParser.parseSingle(json, User.class);
             assertNotNull(user.getEmail());
             assertNotNull(user.getName());
             assertNotNull(user.getAddress());
@@ -215,7 +238,7 @@
                     }
                     """;
 
-            Order order = JsonParser.parseSingle(json, Order.class);
+            Order order = jsonParser.parseSingle(json, Order.class);
             assertEquals(64747457, order.getId());
             assertArrayEquals(new Integer[]{1, 2, 3, 4, 5}, order.getNumbers().toArray());
         }
@@ -235,7 +258,7 @@
                     }
                     """;
 
-            Order order = JsonParser.parseSingle(json, Order.class);
+            Order order = jsonParser.parseSingle(json, Order.class);
             assertEquals(64747457, order.getId());
             assertEquals(12312, order.getProducts().getFirst().getId());
             assertEquals("teste", order.getProducts().getFirst().getName());
@@ -258,7 +281,7 @@
                     ]
                     """;
 
-            List<Order> order = JsonParser.parseList(json, Order.class);
+            List<Order> order = jsonParser.parseList(json, Order.class);
             assertEquals(64747457, order.getFirst().getId());
             assertEquals(12312, order.getFirst().getProducts().getFirst().getId());
             assertEquals("teste", order.getFirst().getProducts().getFirst().getName());
@@ -272,7 +295,7 @@
                     {}
                     """;
 
-            assertThrows(ConvertToObjectException.class, () -> JsonParser.parseSingle(json, User.class));
+            assertThrows(ConvertToObjectException.class, () -> jsonParser.parseSingle(json, User.class));
         }
 
         @Test
@@ -284,7 +307,7 @@
                     }
                     """;
 
-            assertThrows(InvalidSyntaxException.class, () -> JsonParser.parseSingle(json, User.class));
+            assertThrows(InvalidSyntaxException.class, () -> jsonParser.parseSingle(json, User.class));
         }
 
         @Test
@@ -297,7 +320,7 @@
                     }
                     """;
 
-            Product product = JsonParser.parseSingle(json, Product.class);
+            Product product = jsonParser.parseSingle(json, Product.class);
             assertEquals("3232d3f3j", product.getReference());
         }
 
@@ -314,7 +337,7 @@
                     }
                     """;
 
-            Product product = JsonParser.parseSingle(json, Product.class);
+            Product product = jsonParser.parseSingle(json, Product.class);
             assertEquals("1 February", product.getBought_at());
         }
 
@@ -328,7 +351,7 @@
                     }
                     """;
 
-            assertThrows(ConvertToObjectException.class, () -> JsonParser.parseSingle(json, User.class));
+            assertThrows(ConvertToObjectException.class, () -> jsonParser.parseSingle(json, User.class));
         }
 
         @Test
@@ -339,7 +362,7 @@
                         "products": []
                     }
                     """;
-            Order order = JsonParser.parseSingle(json, Order.class);
+            Order order = jsonParser.parseSingle(json, Order.class);
             assertTrue(order.products.isEmpty());
             assertEquals(12312, order.getId());
         }
@@ -357,7 +380,7 @@
             }
             """;
 
-            Order order = JsonParser.parseSingle(json, Order.class);
+            Order order = jsonParser.parseSingle(json, Order.class);
             assertEquals(12345, order.getId());
             assertEquals(2, order.getProducts().size());
             assertEquals(3, order.getNumbers().size());
@@ -369,7 +392,7 @@
         public void checkEmptyJsonArray() {
             String json = "[]";
 
-            List<Order> orders = JsonParser.parseList(json, Order.class);
+            List<Order> orders = jsonParser.parseList(json, Order.class);
             assertTrue(orders.isEmpty());
         }
 

@@ -1,6 +1,10 @@
 package dev.buskopan.lexer;
 
 import dev.buskopan.exception.InvalidCharacterException;
+import dev.buskopan.internal.lexer.Lexer;
+import dev.buskopan.internal.lexer.Token;
+import dev.buskopan.internal.lexer.TypeToken;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -8,6 +12,15 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 class LexerTest {
+    
+    private static Lexer lexer;
+    
+    @BeforeAll
+    public static void setup() {
+        if (lexer == null) {
+            lexer = Lexer.getInstance();
+        }
+    }
 
     @Test
     public void checkJsonTokens() {
@@ -17,7 +30,7 @@ class LexerTest {
                     "idade": 12
                 }
                 """;
-        List<Token> tokens = Lexer.tokenize(json);
+        List<Token> tokens = lexer.tokenize(json);
         assertEquals(9, tokens.size());
         assertEquals(TypeToken.INICIO_OBJETO, tokens.getFirst().getType());
         assertEquals(TypeToken.FIM_OBJETO, tokens.getLast().getType());
@@ -34,7 +47,7 @@ class LexerTest {
     @Test
     public void checkEmptyJson() {
         String json = "";
-        List<Token> tokens = Lexer.tokenize(json);
+        List<Token> tokens = lexer.tokenize(json);
         assertTrue(tokens.isEmpty());
     }
 
@@ -65,10 +78,10 @@ class LexerTest {
                }
                 """;
 
-        assertThrows(InvalidCharacterException.class, () -> Lexer.tokenize(json1));
-        assertThrows(InvalidCharacterException.class, () -> Lexer.tokenize(json2));
-        assertThrows(InvalidCharacterException.class, () -> Lexer.tokenize(json3));
-        assertThrows(InvalidCharacterException.class, () -> Lexer.tokenize(json4));
+        assertThrows(InvalidCharacterException.class, () -> lexer.tokenize(json1));
+        assertThrows(InvalidCharacterException.class, () -> lexer.tokenize(json2));
+        assertThrows(InvalidCharacterException.class, () -> lexer.tokenize(json3));
+        assertThrows(InvalidCharacterException.class, () -> lexer.tokenize(json4));
     }
 
 }
